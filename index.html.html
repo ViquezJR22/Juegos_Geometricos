@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Juegos Geometricos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap');
+
+body {font-family: 'Luckiest Guy', cursive; background: url('minecraft.jpg') no-repeat center center fixed; background-size: cover; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; color: #d7d7d7;}
+h1,h2{text-align:center;text-shadow:1px 1px #fff;}
+h1{font-size:2.2em;color:#9dff00;margin-top:20px;}
+h2{font-size:1.5em;color:#fbb759;margin:10px 0;}
+#menu{display:flex;justify-content:center;gap:20px;margin:20px 0;overflow-x:auto;padding:10px;}
+.game-button{background: rgba(35, 34, 34, 0.9); border-radius:15px; padding:20px; width:150px; text-align:center; cursor:pointer; box-shadow:0 5px 10px rgba(0,0,0,0.2); transition:transform 0.2s;}
+.game-button:hover { transform:scale(1.1); }
+.game-button svg { width:80px;height:80px;margin-bottom:10px;}
+#playBtn{margin:10px;padding:10px 20px;font-size:1.3em;border:none;border-radius:10px;background:#4caf50;color:white;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.3);}
+#playBtn:hover { background:#43a047;}
+#gameContainer{display:none;flex-direction:column;align-items:center;width:100%;max-width:800px;}
+.game-container{display:flex;background: rgba(81, 81, 81, 0.9);padding:20px;border-radius:15px;box-shadow:0 0 15px rgba(0,0,0,0.3);width:90%;max-width:800px;}
+.sombra{flex:1;display:flex;justify-content:center;align-items:center;}
+.sombra img{width:150px;height:150px;object-fit:contain;}
+.opciones{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:15px;justify-items:center;align-items:center;}
+.opciones div{text-align:center;}
+.opciones svg{width:100px;height:100px;cursor:pointer;transition:transform 0.2s;}
+.opciones svg:hover{transform:scale(1.1);}
+.status{margin-top:15px;font-size:1.5em;height:50px;position:relative;text-align:center;}
+.status.correct{color:green;animation:pop 0.5s ease;}
+.status.incorrect{color:red;animation:shake 0.5s ease;}
+@keyframes pop{0%{transform:scale(0);}70%{transform:scale(1.3);}100%{transform:scale(1);}}
+@keyframes shake{0%{transform:translateX(0);}25%{transform:translateX(-10px);}50%{transform:translateX(10px);}75%{transform:translateX(-10px);}100%{transform:translateX(0);}}
+.info{margin-top:10px;display:flex;justify-content:space-between;width:90%;max-width:800px;font-weight:bold;}
+.progress-bar{width:100%;background:#ddd;height:20px;border-radius:10px;overflow:hidden;margin-top:10px;position:relative;}
+.progress{height:100%;background:#4caf50;width:0%;transition:width 1s linear;}
+.time-bar{position:absolute;top:0;left:0;height:100%;background:#ff9800;width:100%;transition:width 1s linear;}
+.confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:9999;}
+.confetti-piece{position:absolute;width:10px;height:10px;opacity:0.7;animation:fall 3s linear forwards;}
+@keyframes fall{0%{transform:translateY(0) rotate(0deg);}100%{transform:translateY(100vh) rotate(360deg);}}
+.sad-face{font-size:50px;animation:shake 0.5s ease;display:inline-block;}
+</style>
+</head>
+<body>
+<h1>Mini Juegos Educativos</h1>
+<h2>Selecciona un juego</h2>
+<div id="menu">
+  <div class="game-button" data-game="figuras">
+    <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#f44336"/></svg>
+    <div>Figuras Geométricas</div>
+  </div>
+  <div class="game-button" data-game="juego2">
+    <svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#2196f3"/></svg>
+    <div>Juego 2</div>
+  </div>
+  <div class="game-button" data-game="juego3">
+    <svg viewBox="0 0 100 100"><polygon points="50,0 100,100 0,100" fill="#4caf50"/></svg>
+    <div>Juego 3</div>
+  </div>
+</div>
+
+<button id="playBtn" disabled>Play</button>
+
+<div id="gameContainer">
+  <div class="game-container">
+    <div class="sombra" id="sombra"></div>
+    <div class="opciones" id="opciones"></div>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="info">
+    <div>Puntuación: <span id="score">0</span></div>
+    <div>Tiempo: <span id="timer">10</span>s</div>
+    <div>Pantalla: <span id="current">1</span> de <span id="total">12</span></div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress" id="progress"></div>
+    <div class="time-bar" id="timeBar"></div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti"></div>
+
+<audio id="clickSound" preload="auto"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
+<audio id="correctSound" preload="auto"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
+<audio id="wrongSound" preload="auto"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
+<audio id="tickSound" preload="auto"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav"></audio>
+
+<script>
+const figuras = [
+  { nombre:'Círculo', color:'#f44336', svg:'<circle cx="50" cy="50" r="40"/>', tipo:'figura' },
+  { nombre:'Cubo', color:'#2196f3', svg:'<rect x="10" y="10" width="80" height="80"/>', tipo:'figura' },
+  { nombre:'Triángulo', color:'#4caf50', svg:'<polygon points="50,10 90,90 10,90"/>', tipo:'figura' },
+  { nombre:'Rombo', color:'#00bcd4', svg:'<polygon points="50,0 90,50 50,100 10,50"/>', tipo:'figura' }
+];
+
+const personajes = [
+  { nombre:'Pikachu', tipo:'img', src:'pikachu.png' },
+  { nombre:'Mario Bros', tipo:'img', src:'mario-bros.png' },
+  { nombre:'Macqueen', tipo:'img', src:'macqueen.png' },
+  { nombre:'Estrella', tipo:'img', src:'estrella.png' },
+  { nombre:'Corazón', tipo:'img', src:'corazon.png' },
+  { nombre:'Cruz', tipo:'img', src:'cruz.png' },
+  { nombre:'Micky mouse', tipo:'img', src:'micky-mouse.png' }
+];
+
+const menuBtns = document.querySelectorAll('.game-button');
+const playBtn = document.getElementById('playBtn');
+const gameContainer = document.getElementById('gameContainer');
+let selectedGame=null;
+
+const clickSound=document.getElementById('clickSound');
+const correctSound=document.getElementById('correctSound');
+const wrongSound=document.getElementById('wrongSound');
+const tickSound=document.getElementById('tickSound');
+
+const sombraDiv=document.getElementById('sombra');
+const opcionesDiv=document.getElementById('opciones');
+const statusDiv=document.getElementById('status');
+const scoreSpan=document.getElementById('score');
+const timerSpan=document.getElementById('timer');
+const currentSpan=document.getElementById('current');
+const totalSpan=document.getElementById('total');
+const progressDiv=document.getElementById('progress');
+const timeBar=document.getElementById('timeBar');
+const confettiDiv=document.getElementById('confetti');
+
+let preguntas=[], current=0, score=0, time=10, timerInterval;
+
+menuBtns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    menuBtns.forEach(b=>b.style.border='');
+    btn.style.border='3px solid #ff9800';
+    selectedGame = btn.dataset.game;
+    playBtn.disabled=false;
+  });
+});
+
+playBtn.addEventListener('click', ()=>{
+  if(!selectedGame) return;
+  document.getElementById('menu').style.display='none';
+  playBtn.style.display='none';
+  gameContainer.style.display='flex';
+  startGame();
+});
+
+function startGame(){
+  preguntas=[];
+  const allItems = [...figuras, ...personajes].sort(()=>Math.random()-0.5);
+  for(let i=0;i<12;i++){
+    preguntas.push(allItems[i % allItems.length]);
+  }
+  current=0; score=0;
+  scoreSpan.textContent=score;
+  totalSpan.textContent=preguntas.length;
+  nextQuestion();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  time=10; timerSpan.textContent=time;
+  timeBar.style.width='100%';
+  timerInterval=setInterval(()=>{
+    time--;
+    timerSpan.textContent=time;
+    timeBar.style.width=(time*10)+'%';
+    tickSound.play();
+    if(time<=0){ clearInterval(timerInterval); markWrong(); }
+  },1000);
+}
+
+function nextQuestion(){
+  if(current>=preguntas.length){ showEndScreen(); return; }
+  currentSpan.textContent=current+1;
+  statusDiv.textContent=''; statusDiv.className='status';
+  const pregunta = preguntas[current];
+
+  // Mostrar sombra
+  if(pregunta.tipo==='img'){
+    sombraDiv.innerHTML=`<img src="${pregunta.src}">`;
+  } else {
+    sombraDiv.innerHTML=`<svg width="150" height="150"><g fill="black">${pregunta.svg}</g></svg>`;
+  }
+
+  // Opciones
+  let opciones=[];
+  if(pregunta.tipo==='img'){
+    opciones.push({nombre:'No es figura geométrica', color:'#607d8b', svg:'<circle cx="50" cy="50" r="40"/><line x1="20" y1="20" x2="80" y2="80" stroke="white" stroke-width="8"/><line x1="80" y1="20" x2="20" y2="80" stroke="white" stroke-width="8"/>'});
+    opciones = opciones.concat(figuras.sort(()=>Math.random()-0.5).slice(0,3));
+  } else if(pregunta.tipo==='figura'){
+    opciones.push(pregunta);
+    opciones = opciones.concat(figuras.filter(f=>f.nombre!==pregunta.nombre).sort(()=>Math.random()-0.5).slice(0,3));
+  }
+
+  opciones.sort(()=>Math.random()-0.5);
+  opcionesDiv.innerHTML='';
+  opciones.forEach(op=>{
+    const divEl=document.createElement('div');
+    divEl.innerHTML=`<svg viewBox="0 0 100 100" fill="${op.color}">${op.svg}</svg><div>${op.nombre}</div>`;
+    divEl.addEventListener('click', ()=>{
+      clickSound.play();
+      let correct = (pregunta.tipo==='img')? (op.nombre==='No es figura geométrica') : (op.nombre===pregunta.nombre);
+      if(correct) markCorrect(); else markWrong();
+    });
+    opcionesDiv.appendChild(divEl);
+  });
+  progressDiv.style.width=((current)/preguntas.length)*100+'%';
+  startTimer();
+}
+
+function markCorrect(){
+  clearInterval(timerInterval);
+  statusDiv.className='status correct';
+  statusDiv.textContent='✅ Correcto';
+  createConfetti();
+  correctSound.play();
+  score+=10; scoreSpan.textContent=score;
+  current++;
+  setTimeout(nextQuestion,1000);
+}
+
+function markWrong(){
+  clearInterval(timerInterval);
+  statusDiv.className='status incorrect';
+  statusDiv.innerHTML='❌ Incorrecto <span class="sad-face">😢</span>';
+  wrongSound.play();
+  current++;
+  setTimeout(nextQuestion,1000);
+}
+
+function createConfetti(){
+  confettiDiv.innerHTML='';
+  for(let i=0;i<50;i++){
+    const piece=document.createElement('div');
+    piece.className='confetti-piece';
+    piece.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;
+    piece.style.left=Math.random()*100+'vw';
+    piece.style.animationDuration=(2+Math.random()*2)+'s';
+    piece.style.width=piece.style.height=(5+Math.random()*10)+'px';
+    confettiDiv.appendChild(piece);
+  }
+  setTimeout(()=>{confettiDiv.innerHTML='';},3000);
+}
+
+function showEndScreen(){
+  clearInterval(timerInterval);
+  const media=(score/(preguntas.length*10))*100;
+  const mensaje=media>=70?'¡Pasaste la prueba! 🎉':'No pasaste 😢';
+  const overlay=document.createElement('div');
+  overlay.style.position='fixed';
+  overlay.style.top='0'; overlay.style.left='0';
+  overlay.style.width='100vw'; overlay.style.height='100vh';
+  overlay.style.background='rgba(0,0,0,0.7)';
+  overlay.style.display='flex'; overlay.style.flexDirection='column';
+  overlay.style.justifyContent='center'; overlay.style.alignItems='center';
+  overlay.style.zIndex='10000';
+  overlay.style.color='white';
+  overlay.style.fontSize='2em';
+  overlay.style.textAlign='center';
+  overlay.innerHTML=`<div>${mensaje}</div><div style="margin-top:20px;">
+    <button id="replayBtn" style="margin:10px;padding:10px 20px;font-size:1em;border:none;border-radius:10px;cursor:pointer;">Volver a Jugar</button>
+    <button id="menuBtn" style="margin:10px;padding:10px 20px;font-size:1em;border:none;border-radius:10px;cursor:pointer;">Menú Principal</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('replayBtn').addEventListener('click',()=>{document.body.removeChild(overlay); startGame();});
+  document.getElementById('menuBtn').addEventListener('click', ()=>{
+    document.body.removeChild(overlay);
+    gameContainer.style.display='none';
+    document.getElementById('menu').style.display='flex';
+    playBtn.style.display='inline-block';
+    playBtn.disabled=true;
+    selectedGame=null;
+  });
+}
+</script>
+</body>
+</html>
